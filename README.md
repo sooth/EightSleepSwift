@@ -20,7 +20,7 @@ Add the following to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/EightSleepKit.git", from: "1.0.0")
+    .package(url: "https://github.com/sooth/EightSleepSwift.git", from: "1.0.0")
 ]
 ```
 

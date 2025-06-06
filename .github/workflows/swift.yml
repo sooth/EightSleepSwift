@@ -1,0 +1,101 @@
+name: Swift
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [created]
+
+jobs:
+  build-and-test:
+    name: Build and Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-13, macos-14]
+        
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+      if: matrix.os == 'macos-14'
+      
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+      if: matrix.os == 'macos-13'
+      
+    - name: Show Swift version
+      run: swift --version
+      
+    - name: Build Package
+      run: swift build -v
+      
+    - name: Build for iOS
+      run: |
+        xcodebuild -scheme EightSleepKit \
+          -destination 'platform=iOS Simulator,name=iPhone 15' \
+          build
+      
+    - name: Build for tvOS
+      run: |
+        xcodebuild -scheme EightSleepKit \
+          -destination 'platform=tvOS Simulator,name=Apple TV' \
+          build
+      
+    - name: Build for watchOS
+      run: |
+        xcodebuild -scheme EightSleepKit \
+          -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
+          build
+      
+    - name: Run Tests
+      run: swift test -v
+      
+    - name: Build CLI Tools
+      run: |
+        swift build -c release --product eight-sleep-cli
+        swift build -c release --product eight-sleep-cli-args
+
+  release:
+    name: Create Release Build
+    needs: build-and-test
+    runs-on: macos-14
+    if: github.event_name == 'release'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+      
+    - name: Build Release Binaries
+      run: |
+        swift build -c release --arch arm64 --arch x86_64
+        
+    - name: Create Universal Binaries
+      run: |
+        mkdir -p release
+        lipo -create -output release/eight-sleep-cli \
+          .build/arm64-apple-macosx/release/eight-sleep-cli \
+          .build/x86_64-apple-macosx/release/eight-sleep-cli
+        lipo -create -output release/eight-sleep-cli-args \
+          .build/arm64-apple-macosx/release/eight-sleep-cli-args \
+          .build/x86_64-apple-macosx/release/eight-sleep-cli-args
+        chmod +x release/*
+        
+    - name: Create Archive
+      run: |
+        tar -czf eight-sleep-cli-${{ github.event.release.tag_name }}.tar.gz -C release .
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./eight-sleep-cli-${{ github.event.release.tag_name }}.tar.gz
+        asset_name: eight-sleep-cli-${{ github.event.release.tag_name }}.tar.gz
+        asset_content_type: application/gzip
