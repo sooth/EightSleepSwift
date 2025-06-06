@@ -73,7 +73,8 @@ jobs:
       
     - name: Build Release Binaries
       run: |
-        swift build -c release --arch arm64 --arch x86_64
+        swift build -c release --arch arm64
+        swift build -c release --arch x86_64
         
     - name: Create Universal Binaries
       run: |
