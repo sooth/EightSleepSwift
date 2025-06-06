@@ -74,17 +74,12 @@ jobs:
     - name: Build Release Binaries
       run: |
         swift build -c release --arch arm64
-        swift build -c release --arch x86_64
         
-    - name: Create Universal Binaries
+    - name: Create Release Archive
       run: |
         mkdir -p release
-        lipo -create -output release/eight-sleep-cli \
-          .build/arm64-apple-macosx/release/eight-sleep-cli \
-          .build/x86_64-apple-macosx/release/eight-sleep-cli
-        lipo -create -output release/eight-sleep-cli-args \
-          .build/arm64-apple-macosx/release/eight-sleep-cli-args \
-          .build/x86_64-apple-macosx/release/eight-sleep-cli-args
+        cp .build/arm64-apple-macosx/release/eight-sleep-cli release/
+        cp .build/arm64-apple-macosx/release/eight-sleep-cli-args release/
         chmod +x release/*
         
     - name: Create Archive
